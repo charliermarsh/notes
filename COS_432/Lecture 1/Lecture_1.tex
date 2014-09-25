@@ -1,0 +1,186 @@
+\documentclass[12pt]{article}
+\usepackage{graphicx}
+\usepackage{amsmath, amssymb, amsthm}
+\usepackage[auth-sc,affil-sl]{authblk}
+\usepackage{enumerate}
+\newtheorem{thm}{Theorem}[section]
+\newtheorem{cor}[thm]{Corollary}
+\newtheorem{lem}[thm]{Lemma}
+\newtheorem*{claim}{Claim}
+\newtheorem*{mydef}{Definition}
+
+% Set the margins
+%
+\setlength{\textheight}{8.5in}
+\setlength{\headheight}{.25in}
+\setlength{\headsep}{.25in}
+\setlength{\topmargin}{0in}
+\setlength{\textwidth}{6.5in}
+\setlength{\oddsidemargin}{0in}
+\setlength{\evensidemargin}{0in}
+
+% Macros
+\newcommand{\myN}{\hbox{N\hspace*{-.9em}I\hspace*{.4em}}}
+\newcommand{\myZ}{\hbox{Z}^+}
+\newcommand{\myR}{\hbox{R}}
+
+\newcommand{\myfunction}[3]
+{${#1} : {#2} \rightarrow {#3}$ }
+
+\newcommand{\myzrfunction}[1]
+{\myfunction{#1}{{\myZ}}{{\myR}}}
+
+
+% Formating Macros
+
+\newcommand{\myheader}[4]
+{\vspace*{-0.5in}
+\noindent
+{#1} \hfill {#3}
+
+\noindent
+{#2} \hfill {#4}
+
+\noindent
+\rule[8pt]{\textwidth}{1pt}
+
+\vspace{1ex} 
+}  % end \myheader 
+
+\newcommand{\myalgsheader}[0]
+{\myheader
+{ {\bf{COS 432}} }
+{ {\bf{Fall 2014}} }
+{ {\bf{Charles Marsh (crmarsh@)}} }
+{ {\bf{Lecture 1: Introduction}} }
+}
+
+\begin{document}
+
+\myalgsheader
+
+\pagestyle{plain}
+
+The basic \textbf{threat model} is a concise description of the powers of the adversary and the operations they're permitted to perform, as well as their goals. For example, if Alice is trying to send a message to Bob, we might describe the threat model through a middleman, Mallory, who can intercept and send new messages, manipulating them arbitrarily, and trying to have Bob accept an altered message.
+
+We look at:
+\begin{enumerate}
+\item Confidentiality
+\item Integrity
+\item Availability
+\end{enumerate}
+
+If Alice just sends the message $X$, it clearly won't be sufficient. Instead, she'll need to send $(X, f(X))$ (i.e., $X$ and some additional information). In this model, we call $f(X)$, the ``Message Authentication Code" (MAC).
+
+Say Mallory sends $(a, b)$. Bob accepts the message $i.f.f. f(a) = b$. What does this say about $f$?
+\begin{itemize}
+\item $f$ must be \textbf{deterministic}.
+\item $f$ must be easily computable (by Alice and Bob).
+\item $f$ must \textit{not} be computable by Mallory.
+\item $\implies f$ depends on knowledge that only Alice and Bob have.
+\end{itemize}
+
+What if we decide that $f$ is a secret function? This is actually \textit{not} a good idea. It's very difficult to figure out the likelihood that Mallory won't be able to guess what Alice and Bob are thinking--difficult to quantify the likelihood of attack here.
+
+A better approach: rely on a \textbf{secret key} (preference for secret key but public function over private function is \textit{Kerckhoff's Principle}).
+\begin{itemize}
+\item Say $k$ is a 256-bit random value known only to Alice and Bob.
+\item Define $f(k, X)$ to be a function of the secret key $k$ and the message $X$.
+\end{itemize}
+
+At this point:
+\begin{enumerate}
+\item We can quantify the probability that Mallory guesses the key correctly (in this case, $\frac{1}{2^{256}}$).
+\item If we lose the key for some reason, we can just generate a fresh key (much easier than generating a new function, as we're now just generating a single variable to refresh our security protocol).
+\item We can communicate with many different individuals by swapping out the key.
+\end{enumerate}
+
+\subsection*{Defining ``Secure''}
+
+We call this the ``Secure MAC Game":
+\begin{enumerate}
+\item Mallory sends us $x_0$.
+\item We send back $f(x_i)$.
+\item Mallory sends us $x_i$, continuing a polynomial number of times.
+\item Mallory guesses by sending across $(y, f(y))$, where $y \not \in \{x_0, x_1, ... \}$.
+\item Mallory wins if $f(y)$ is correct.
+\end{enumerate}
+
+\begin{mydef}[Secure MAC]
+$f$ is a \textbf{secure MAC} if and only if every ``efficient" (poly-time) strategy for Mallory wins with ``negligible" (goes to zero as a negative exponential in the key-size) probability.
+\end{mydef}
+
+Example: try a random function that takes an arbitrary-size input, produces 256-bit output, and defined on a random truth table.
+
+\begin{thm}
+A random function is a secure MAC.
+\begin{proof}
+Learning any row of the truth table provides no information on any other row. Guessing a distinct row is always $\frac{1}{2^{256}}$ probability. There's no strategy that does better than guessing.
+\end{proof}
+\end{thm}
+
+As this function is way too large and expensive to represent and implement, we want a function that appears random, but actually isn't (i.e., a \textit{pseudorandom} function).
+
+\subsection*{Pseudorandom Functions}
+
+\begin{mydef}[Pseudorandom Function]
+A \textbf{pseudorandom function} is a public function $f(k, x)$ where $k$ is a secret 256-bit key.
+
+$f$ is a \textbf{secure PRF} if and only if every ``efficient" strategy for Mallory wins with $prob \leq \frac{1}{2} + \epsilon$, where $\epsilon$ is ``negligible".
+\end{mydef}
+
+The goal is that Mallory cannot tell the difference between a truly random function and our pseudorandom function: play the ``Secure MAC Game", but use a random function with probability $\frac{1}{2}$ and a pseudorandom function with probability $\frac{1}{2}$. Mallory should not be able to guess whether we're using our pseudorandom function or a truly random function with probability $> \frac{1}{2}$.
+
+Caveats:
+\begin{itemize}
+\item Mallory can win by trying all values of $k$; but that's not ``efficient".
+\item Mallory can get non-zero advantage over guessing by trying a poly-size subset of $k$ values; but this advantage is ``negligible" because the pool of $k$ values is exponential.
+\end{itemize}
+
+\begin{thm}
+If $f$ is a secure PRF, then $f(k, x)$ with a random $k$ is a secure MAC.
+\begin{proof}
+If Mallory could win the ``Secure MAC Game", then she could simply play it to win the ``Secure PRF Game".
+\end{proof}
+\end{thm}
+
+\subsection*{Do PRFs Exist?}
+
+Maybe. We don't have a theoretical reason why a PRF definitely does or doesn't exist; all we know is that there are \textit{some} functions that appear to be PRFs and have not been proven otherwise (although there are functions that once appeared to be PRFs and \textit{were} proven otherwise). Most theorists would say ``Probably".
+
+In practice, we use a ``candidate" PRF. The standard for acceptance is based on how long we've failed to prove it as a non-PRF.
+
+\subsection*{HMAC-SHA256}
+
+A common candidate PRF, defined as: $$HMAC-SHA256(k, X) = SHA256(k \oplus z_1 || SHA256(k \oplus z_2 || X))$$ where $z_1 = 0x3636...$ and $z_2 = 0x5c5c...$.
+
+\subsection*{Cryptographic Hash Functions}
+
+\begin{mydef}
+A \textbf{cryptographic hash function} is a function from arbitrary-sized input to fixed-size output that is ``hard to reverse."
+\end{mydef}
+
+Example: SHA256. Break input into fixed-size (512-bit) blocks: $b_0, b_1, ..., b_{k-1}$. Take some 256-bit constant $c$ (looked up in standards document), pass $c$ and $b_0$ into a function $h$ that produces a 256-bit output; apply $h$ again with the output and $b_1$, etc.
+
+SHA256 is \textit{not} a secure MAC on its own. However, some properties that it does have:
+\begin{itemize}
+\item Collision resistance: you can't find $x \not = y$ such that $H(x) = H(y)$.
+\item Second pre-image resistance: given $x$, you can't find $y$ such that $H(x) = H(y)$.
+\item If $x$ is chosen randomly from a high-entropy distribution, then given $H(x)$, you can't find $x$. (You \textit{want} to say that given $H(x)$, you can't find $x$; but that isn't quite true in general.)
+\end{itemize}
+
+\subsection*{Aside: Security Models}
+
+Two ways to discuss security:
+\begin{itemize}
+\item On the level of a story (i.e., using Alice and Bob).
+\item On the level of mathematics.
+\end{itemize}
+
+Even theoretical security researchers use stories quite often. Why? Easy to follow and remember. However:
+\begin{itemize}
+\item What we describe as ``Alice'' and ``Bob'' might actually be computers.
+\item What we describe as ``Alice'' is usually a person \textit{and} a computer. Forgetting this leads us to rule out certain kinds of attacks (e.g., phishing).
+\end{itemize}
+
+\end{document}

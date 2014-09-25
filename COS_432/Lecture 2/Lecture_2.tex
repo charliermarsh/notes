@@ -1,0 +1,204 @@
+\documentclass[12pt]{article}
+\usepackage{graphicx}
+\usepackage{amsmath, amssymb, amsthm}
+\usepackage[auth-sc,affil-sl]{authblk}
+\usepackage{enumerate}
+\newtheorem{thm}{Theorem}[section]
+\newtheorem{cor}[thm]{Corollary}
+\newtheorem{lem}[thm]{Lemma}
+\newtheorem*{claim}{Claim}
+\newtheorem*{mydef}{Definition}
+
+% Set the margins
+%
+\setlength{\textheight}{8.5in}
+\setlength{\headheight}{.25in}
+\setlength{\headsep}{.25in}
+\setlength{\topmargin}{0in}
+\setlength{\textwidth}{6.5in}
+\setlength{\oddsidemargin}{0in}
+\setlength{\evensidemargin}{0in}
+
+% Macros
+\newcommand{\myN}{\hbox{N\hspace*{-.9em}I\hspace*{.4em}}}
+\newcommand{\myZ}{\hbox{Z}^+}
+\newcommand{\myR}{\hbox{R}}
+
+\newcommand{\myfunction}[3]
+{${#1} : {#2} \rightarrow {#3}$ }
+
+\newcommand{\myzrfunction}[1]
+{\myfunction{#1}{{\myZ}}{{\myR}}}
+
+
+% Formating Macros
+
+\newcommand{\myheader}[4]
+{\vspace*{-0.5in}
+\noindent
+{#1} \hfill {#3}
+
+\noindent
+{#2} \hfill {#4}
+
+\noindent
+\rule[8pt]{\textwidth}{1pt}
+
+\vspace{1ex} 
+}  % end \myheader 
+
+\newcommand{\myalgsheader}[0]
+{\myheader
+{ {\bf{COS 432}} }
+{ {\bf{Fall 2014}} }
+{ {\bf{Charles Marsh (crmarsh@)}} }
+{ {\bf{Lecture 2: Random Numbers}} }
+}
+
+\begin{document}
+
+\myalgsheader
+
+\pagestyle{plain}
+
+Is 68 a random number? There's something wrong with the question. Randomness is not a property of an individual number but rather of a system or process. Randomness is very often the source of insecurity in systems, as if the underlying pseudorandom process is insecure, then the entire system will be as well.
+
+What's ``good enough" for randomness in cryptography? \textbf{Random $\approx$ unpredictable}. The goal of generating a random key is to prevent the adversary from doing some computation that relies on the key, then what we need is for that key to be unpredictable.
+
+\textbf{Unpredictability} is contingent on questions like ``to whom?" and ``when?". We typically discuss it in context.
+
+\section*{Pseudorandom Generator (PRG)}
+
+\begin{mydef}[PRG]
+Takes a small random ``seed" as input (typically 256-bits). Generates a long output sequence that is indistinguishable from random.
+
+Defined by a game:
+\begin{itemize}
+\item Mallory sees either a random function or a PRG with a random seed.
+\item Mallory guesses which of the two she saw.
+\item Can Mallory win more than half the time? If no, then it's a ``secure PRG".
+\end{itemize}
+\end{mydef}
+
+The PRG has a ``hidden state" $s$ and operates as follows:
+\begin{enumerate}
+\item Seed goes into the $init$ function, which produces initial state $s_0$.
+\item Apply $out(s_0)$ to produce ${output}_0$.
+\item Call the $advance$ function, which produces $s_1$, the next hidden state of the generator.
+\item Continue for as long as you'd like.
+\end{enumerate}
+
+We can define a particular generator by defining the $init$, $out$, and $advance$ functions. Outputs will be of a particular size. You can slice, buffer, and concatenate as necessary.
+
+Another useful property: \textbf{no backtracking}. If an adversary learns the hidden state of the generator at any time, it cannot recover earlier output. For example, if the adversary can invert the $advance$ function, then they can produce the seeds used earlier on in the process.
+
+
+\subsection*{Example: PRG \#1 (allows backtracking)}
+
+Assume we have PRF $f$. This PRG just keeps a counter and increments it over time.
+
+\begin{itemize}
+\item $init \rightarrow (seed, 0)$
+\item $advance: (seed, k) \rightarrow (seed, k+1)$
+\item $out: f(seed, k)$
+\end{itemize}
+
+If you see the state any any time, just decrement the counter to get previous outputs.
+
+\subsection*{Example: PRG \#2 (no backtracking)}
+
+\begin{itemize}
+\item $init \rightarrow seed$
+\item $advance: seed \rightarrow f(s, 0)$
+\item $out: f(s, 1)$
+\end{itemize}
+
+If you see $f(s, 0)$, you cannot retrieve $s$, which was the previous PRF key.
+
+\section*{Pseudorandomness as a System Service}
+
+Starting point: PRG inside the system. But there are two problems:
+\begin{enumerate}
+\item Where does the seed come from?
+\item How do we recover if the state leaks? (We might not even know it leaked, which suggests that we should ``always be recoverable".)
+\end{enumerate}
+
+Add an operation to our PRG, \textbf{recover}: $(state, data) \rightarrow state$. The goal is to use some data that the adversary doesn't know about to come up with new, unpredictable states constantly. You can also get an initial seed by recovering (i.e., just compute $recover(0, data)$).
+
+To recover:
+\begin{enumerate}
+\item \textbf{Collect} unpredictable data.
+\begin{itemize}
+\item Pick up the exact history of key presses (i.e., which key and at which time it was pressed).
+\item Pick up the exact path of the mouse as it moves across the screen.
+\item Take periodic screenshots.
+\item Pick up the exact history of network packet traffic.
+\item Pick up internal temperature of the computer.
+\item Pick up mic or camera input.
+\item \textit{Most of this will be low quality data, highly correlated.}
+\end{itemize}
+\item \textbf{Extract} compact set of bits.
+\begin{itemize}
+\item Run SHA256(data).
+\end{itemize}
+\end{enumerate}
+
+Recovery process consists of:
+\begin{enumerate}
+\item Add state to the randomness pool.
+\item Take SHA256(data) output and make it the new state.
+\end{enumerate}
+
+In practice, it's really hard to estimate how much randomness we have in the pool; we often try to be as conservative as possible in recovery, waiting until we almost certainly have way too much data before running the recovery process.
+
+\section*{Message Confidentiality}
+
+Process:
+\begin{enumerate}
+\item Alice inputs $plaintext$ and $key$ into an encryption function $E$.
+\item Bob puts the $ciphertext$ and $key$ through the decryption function $D$.
+\item Eve wants to intercept and read the $ciphertext$.
+\end{enumerate}
+
+The \textbf{one-time pad} gives us confidentiality:
+\begin{itemize}
+\item $E(k, x) = k \oplus x$
+\item $D(k, x) = k \oplus x$
+\end{itemize}
+
+If $k$ is chosen randomly, then the ciphertexts are indistinguishable from random. So the one-time pad is secure, but unfortunately, the key must be as big as the message and it cannot be reused.
+
+We have multiple definitions of security in this context. We'll use the following.
+
+\begin{mydef}[Semantic Security]
+Defined through a game against Mallory. We pick a secret key $k$. Mallory sends us $x_0$, and we send back $E(k, x_0)$, repeat $n$ times. Then Mallory gets to guess $y_0, y_1$. We flip a coin to pick a bit $b$. We send back $E(k, y_b)$. Mallory attempts to guess $b$ and wins if she can do better than random (i.e., if there's no such strategy for Mallory that's effective with non-negligible advantage, then the encryption process is secure).
+\end{mydef}
+
+This doesn't say that Mallory is unable to tamper with or forge messages; she just can't tell them apart.
+
+The one-time pad fails this test unless we extend it and use it in pieces.
+
+\begin{mydef}[Stream Cipher]
+Start with a fixed-size random $k$. Add a ``nonce" (unique but non-secret value). Use $(k || nonce)$ to seed a PRG and XOR the message with the output of that PRG. \textbf{Rule}: Don't re-use a $(key, nonce)$ pair. If you follow this rule, you get \textbf{semantic security}.
+\end{mydef}
+
+In practice, you want \textit{both} confidentiality and integrity.
+
+\section*{Confidentiality \& Integrity}
+
+Can we combine a cipher (for confidentiality) and a MAC (for integrity)? Here are several ways to do so:
+\begin{enumerate}
+\item $E(x || M(x))$, as used by SSL/TLS.
+\item $E(x) || M(E(x))$, as used by IPSec.
+\item $E(x) || M(x)$, as used by SSH.
+\end{enumerate}
+
+It's disappointing that different secure systems do this differently, but it's reflective of history: up until 2001, we didn't know how to do this properly. However, \textbf{\#2 is the winner}.
+
+\begin{thm}
+If $E$ is semantically secure and $M$ is a secure MAC, then $E(x) || M(E(x))$ is secure (in the desired sense: eavesdropper can't learn anything about $x$, nor can they tamper with the ciphertext to get Bob to accept a message that Alice didn't send--essentially, you don't break the properties enforced by $E$ and $M$ individually).
+\end{thm}
+
+The other options (\#1, \#3) are only secure with certain choices of $E$ and $M$.
+
+\end{document}
