@@ -71,9 +71,9 @@ Output ``addresses" are really \textit{scripts}. Scripts let you specify arbitra
 
 Script is not Turing-complete, but that's by design. It makes the scripts very easy to run, computationally inexpensive, and safe. It's stack-based, has some cryptographic support, limits time and memory, and does not allow looping or recursion. There are 256 opcodes, which include arithmetic operations and some cryptography primitives, like a variety of hash functions.
 
-99.9\% of the time, the Bitcoin script follows a predictable format: ``<sig> <pubKey> OP\_DUP OP\_HASH160 <pubKeyHash> OP\_EQUALVERIFY OP\_CHECKSIG". This is just Pay-to-Public-Key. If anything goes wrong during Script execution, there'll be some error or you'll have something left on the stack at the end, in which case you know that it failed.
+99.9\% of the time, the Bitcoin script follows a predictable format: ``$<sig>$ $<pubKey>$ OP\_DUP OP\_HASH160 $<pubKeyHash>$ OP\_EQUALVERIFY OP\_CHECKSIG". This is just Pay-to-Public-Key. If anything goes wrong during Script execution, there'll be some error or you'll have something left on the stack at the end, in which case you know that it failed.
 
-Roughly, \~0.01\% are MULTISIG and \~0.01\% are Pay-to-Script-Hash. The remaining scripts are errors or proof-of-burn.
+Roughly, 0.01\% are MULTISIG and 0.01\% are Pay-to-Script-Hash. The remaining scripts are errors or proof-of-burn.
 
 \subsection*{Multisig}
 
@@ -81,7 +81,7 @@ The ``OP\_CHECKMULTISIG" operator is particularly interesting. It provides built
 
 \subsection*{Proof-of-burn}
 
-These scripts are of the form ``OP\_RETURN <arbitrary data>". They burn money, because OP\_RETURN always fails.
+These scripts are of the form ``OP\_RETURN $<data>$". They burn money, because OP\_RETURN always fails.
 
 \subsection*{Should senders specify scripts?}
 
