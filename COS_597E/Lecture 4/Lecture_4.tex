@@ -1,0 +1,129 @@
+\documentclass[12pt]{article}
+\usepackage{graphicx}
+\usepackage{amsmath, amssymb, amsthm}
+\usepackage[auth-sc,affil-sl]{authblk}
+\usepackage{enumerate}
+\newtheorem{thm}{Theorem}[section]
+\newtheorem{cor}[thm]{Corollary}
+\newtheorem{lem}[thm]{Lemma}
+\newtheorem*{claim}{Claim}
+\newtheorem*{mydef}{Definition}
+
+% Set the margins
+%
+\setlength{\textheight}{8.5in}
+\setlength{\headheight}{.25in}
+\setlength{\headsep}{.25in}
+\setlength{\topmargin}{0in}
+\setlength{\textwidth}{6.5in}
+\setlength{\oddsidemargin}{0in}
+\setlength{\evensidemargin}{0in}
+
+% Macros
+\newcommand{\myN}{\hbox{N\hspace*{-.9em}I\hspace*{.4em}}}
+\newcommand{\myZ}{\hbox{Z}^+}
+\newcommand{\myR}{\hbox{R}}
+
+\newcommand{\myfunction}[3]
+{${#1} : {#2} \rightarrow {#3}$ }
+
+\newcommand{\myzrfunction}[1]
+{\myfunction{#1}{{\myZ}}{{\myR}}}
+
+
+% Formatting Macros
+
+\newcommand{\myheader}[4]
+{\vspace*{-0.5in}
+\noindent
+{#1} \hfill {#3}
+
+\noindent
+{#2} \hfill {#4}
+
+\noindent
+\rule[8pt]{\textwidth}{1pt}
+
+\vspace{1ex} 
+}  % end \myheader 
+
+\newcommand{\myalgsheader}[0]
+{\myheader
+{ {\bf{COS 597E}} }
+{ {\bf{Fall 2014}} }
+{ {\bf{Charles Marsh (crmarsh@)}} }
+{ {\bf{Lecture 4: Discussion of Altcoins}} }
+}
+
+\begin{document}
+
+\myalgsheader
+
+\pagestyle{plain}
+
+\section*{Anonymous e-cash via blind signatures}
+
+In 1982, David Chaum came up with a cryptocurrency involving a blind signature: \textit{two-party protocol to create digital signature without signer knowing the input}. The protocol worked as follows:
+
+\begin{enumerate}
+\item User $A$ withdraws an anonymous coin by sending the bank a random ID.
+\item Bank signs the random ID, but \textbf{the bank knows neither the plaintext ID nor the output signature}.
+\item User $A$ can then spend the coin by showing others that the signature came from the bank.
+\item User $A$ sends coin to User $B$.
+\item User $B$ goes and updates with the bank by depositing the signed token and the ID that was inside the token (the bank did not know this ID).
+\item Bank can verify that signing the plaintext ID leads to the signed token.
+\item Puts the signature in the list of spent coins.
+\end{enumerate}
+
+With this system, you have defense against double-spending but you have to trust the bank. The cryptography is only used for anonymization (i.e., the bank has no idea that User $A$ and User $B$ completed a transaction because they don't know which ID they gave User $A$).
+
+At the time, people thought that anonymity was the most important property of a cryptocurrency system; as it turns out, decentralization is more desirable.
+
+\subsection*{Blind signatures}
+
+Let's see the math behind this protocol.
+
+In RSA, you have a public key $(n, e)$ and a private key $d$. To sign a message $m$, you output $s = m^d \mod n$. To verify, you check that $m == s^e \mod n$.
+
+For this two-party protocol, we'll use a variant (RSA Blind Signature). Everyone knows $(n, e)$, and the bank knows the private key $d$. In this variant, Alice picks a random number $r$. For a message $m$, sends $(m)(r^e) \mod n$. The bank signs this entire message, returning:
+\begin{align*}
+(mr^e)^d \mod{n} &= m^d r^{ed} \mod{n}\\
+&= m^d r\mod{n}
+\end{align*}
+
+Alice then divides by $r$, obtaining $m^d \mod{n}$, which is exactly the signature on the message. Note that the signer cannot decide the original message $m$, nor the signature $m^r$.
+
+If Alice gets unlucky, she could withdraw a coin that's already been withdrawn, which would woe out poorly for her (as the bank will refuse when someone tries to redeem it). To avoid this, you need to make the RSA key space fairly large to provide probabilistic guarantees.
+
+\subsection*{Comparisons to Bitcoin}
+
+Here, we have a central bank that protects against double-spending. In Bitcoin, we have this public ledger that lets \textit{anyone} detect double-spending. Almost all of the Altcoins that we'll look at use this ``public ledger" approach.
+
+\section*{Ripple}
+
+Ripple is another Altcoin that takes a different approach.
+
+If you try to do consensus in a traditional model, one of the problems you run into is that adversaries can create tons of copies of the software and construct a majority. To prevent this, we use a proof-of-work model in Bitcoin, where the number of copies is not important, but rather, the amount of computational power.
+
+There are other ways to get around this problem:
+\begin{itemize}
+\item Remove decentralization and centralize node creation.
+\item Proof-of-stake: your influence stems from the amount of currency that you hold, rather than the number of nodes.
+\end{itemize}
+
+Even if there's no central authority, some nodes will still trust other nodes (i.e., you can vouch for your friends). We can use this \textit{friend-to-friend} network to construct a consensus protocol. Ripple implements such a protocol.
+
+\subsection*{Example protocol}
+
+This is not what Ripple uses, but is interesting to think about. Consider the following protocol:
+
+\begin{enumerate}
+\item At round 0, each node proposes the transactions that it thinks should be in the next block.
+\item Each node aggregates the proposals from the nodes it trusts.
+\item For round 1, each node outputs the majority set of its friends outputs from round 0 where \textit{majority} is determined by whether or not a majority of your friends proposed the transaction.
+\item In general, at round $n+1$, you output the majority-voted set of transactions based on your friends' outputs at round $n$.
+\end{enumerate}
+
+To ensure convergence, you can increase the majority threshold over time.
+
+\end{document}
