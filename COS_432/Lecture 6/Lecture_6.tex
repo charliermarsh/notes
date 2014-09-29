@@ -1,0 +1,214 @@
+\documentclass[12pt]{article}
+\usepackage{graphicx}
+\usepackage{amsmath, amssymb, amsthm}
+\usepackage[auth-sc,affil-sl]{authblk}
+\usepackage{enumerate}
+\newtheorem{thm}{Theorem}
+\newtheorem{cor}[thm]{Corollary}
+\newtheorem{lem}[thm]{Lemma}
+\newtheorem*{claim}{Claim}
+\newtheorem*{mydef}{Definition}
+
+% Set the margins
+%
+\setlength{\textheight}{8.5in}
+\setlength{\headheight}{.25in}
+\setlength{\headsep}{.25in}
+\setlength{\topmargin}{0in}
+\setlength{\textwidth}{6.5in}
+\setlength{\oddsidemargin}{0in}
+\setlength{\evensidemargin}{0in}
+
+% Macros
+\newcommand{\myN}{\hbox{N\hspace*{-.9em}I\hspace*{.4em}}}
+\newcommand{\myZ}{\hbox{Z}^+}
+\newcommand{\myR}{\hbox{R}}
+
+\newcommand{\myfunction}[3]
+{${#1} : {#2} \rightarrow {#3}$ }
+
+\newcommand{\myzrfunction}[1]
+{\myfunction{#1}{{\myZ}}{{\myR}}}
+
+
+% Formatting Macros
+
+\newcommand{\myheader}[4]
+{\vspace*{-0.5in}
+\noindent
+{#1} \hfill {#3}
+
+\noindent
+{#2} \hfill {#4}
+
+\noindent
+\rule[8pt]{\textwidth}{1pt}
+
+\vspace{1ex} 
+}  % end \myheader 
+
+\newcommand{\myalgsheader}[0]
+{\myheader
+{ {\bf{COS 432}} }
+{ {\bf{Fall 2014}} }
+{ {\bf{Charles Marsh (crmarsh@)}} }
+{ {\bf{Lecture 6: }} }
+}
+
+\begin{document}
+
+\myalgsheader
+
+\pagestyle{plain}
+
+This is the point in the semester when we start talking about security issues that involve actual people and human behavior, rather than precise cryptographic attacks involving Alice and Bob.
+
+\section*{Authenticating People}
+
+There are three approaches. We can authenticate:
+\begin{itemize}
+\item Something you \textit{know} (e.g., a password).
+\item Something you \textit{have} (e.g., a physical key).
+\item Something you \textit{are} (e.g., your fingerprint).
+\end{itemize}
+
+The primary approach for something you \textit{know} is, of course, the \textbf{password}.
+
+\subsection*{Passwords}
+
+For passwords, the threat model is as follows:
+\begin{enumerate}
+\item The user picks a password and remembers it.
+\item To log in, you present a $(name, password)$ pair.
+\item The adversary wants to log in as some user.
+\item The adversary \textit{might} be able to compromise the server.
+\end{enumerate}
+
+\subsubsection*{Password database}
+
+The first approach: server keeps a ``password database" containing $(name, password)$ pairs. The big drawback is that if the adversary can see the password database, then they can impersonate any user because the passwords are stored as plaintext.
+
+This is a \textbf{significant} problem both because you might worry that someone can hack in from the outside \textit{and} your own system administrators then have access to sensistive user information.
+
+\subsubsection*{Salted hash}
+
+A better approach is to store $(name, PRF(password, salt||name), salt)$. The salt is a random bit string that doesn't need to be kept hidden.
+
+There are several advantages to this approach:
+\begin{itemize}
+\item We don't store the password as plaintext, so an adversary will be reduced to figuring out the password based on the PRF output.
+\item The salt guarantees that an attacker can't precompute a hash function because they need to incorporate the salt after they've seen it. In addition, the attacker can't hash a common password and check which users match that hash (``rainbow table" attack) because every user will have a different $salt||name$.
+\end{itemize}
+
+However, the server doesn't have access to your password, which can be a minor inconvenience for users (i.e., server can reset your password but not remind you what it is).
+
+\subsubsection*{Attacks on passwords}
+
+There are several possible approaches to acquiring a user's password:
+\begin{itemize}
+\item \textbf{Online}: try to log in as user.
+\item \textbf{Offline}: attacker acquires the password database and performs a computational search over passwords (i.e., in the privacy of his own datacenter).
+\item \textbf{Tricking} the user into disclosing their own password, e.g., through phishing or social engineering. An example of the latter: call up the CEO's secretary, tell her you really need your password to do something urgent for the CEO, etc.
+\item \textbf{Spoofing}: impersonate the server, user logs in, you acquire their password. Similar attacks can be launched on ATM machines to read users' credit cards.
+\item If user wrote down password, \textit{read it}.
+\item \textbf{``Shoulder surfing"}: Look over the user's shoulder while they type their password.
+\item Compromise a user's device and record their actions, e.g., with keyloggers.
+\item Get a user's password from one site and try it on another. (Users have on average three or four passwords, so the odds are good that you can reuse them as an attacker.)
+\item \textbf{Change the password database}: if the attacker can go and change the user's password, then they can get into the site through impersonation.
+\end{itemize}
+
+Most of these attacks involve a combination of trickery and technical means, often exploiting the ways that users tend to behave.
+
+\subsubsection*{Countermeasures}
+
+How can we counter these attacks?
+
+\begin{itemize}
+\item Teach users \textit{not} to divulge, i.e., educate them on best practices around password management.
+\item Make guessing \textit{harder}.
+\begin{itemize}
+\item \textbf{vs. online}: Slow down the process. Add a time delay after failures. Lock down the account after some number of failures.
+\item \textbf{vs. offline}: Slow down the verification process, e.g., by hashing the password $n$ times for some large value of $n$ such that the hashing process takes half or a quarter of a second--not awful for login purposes, but very expensive for hackers launching brute force attacks. Even with a scheme like this, roughly half of passwords are guessable given an hour of CPU time (mostly because users tend to pick guessable or common passwords).
+\end{itemize}
+\item Reduce guessability, i.e., make users choose uncommon passwords.
+\begin{itemize}
+\item This is hard to quantify; the only sure way is to make the password truly random, generated from some large space. (Problem, of course, is that users are bad at remembering long, random strings, so they'll write it down, leading to another vulnerability.)
+\item \textbf{Format rules} are also popular (e.g., ``Must include a capital letter"). However, studies have shown that they generally don't improve security because users incorporate these rules in very predictable ways (e.g., by putting a single punctuation mark at the end). They'll useful, but not \textit{that} useful.
+\end{itemize}
+\end{itemize}
+
+In general, there's a tension between \textit{unguessability} and \textit{memorization}. And the problem is only getting worse with Moore's Law: adversaries can guess twice as many passwords per unit time every 18 months, so your password must be drawn from an even larger space.
+
+\subsubsection*{Password hygiene}
+
+Similar to key hygiene. Passwords should be changed periodically and requested frequently (i.e., expire idle sessions). You should also require old passwords in order to change passwords (this is related to the idle session problem: even if a user is logged in, they may have just walked away from their computer, so you should \textit{always} request when changing).
+
+The hard problems remain:
+\begin{itemize}
+\item Initial account setup: you don't have an existing relationship with that user and you need to get their password to them securely.
+\item Password recovery: users can no longer authenticate themselves at all, but you need to get them into a good state. As the server, you \textit{also} don't know their password. (This is typically done via email, but this reduces the security of your system to that of the email service (and, of course, you can't do this if \textit{you're} the email service).)
+\end{itemize}
+
+\subsection*{Multifactor authentication}
+
+This usually involves a password along with something else, which could be:
+\begin{itemize}
+\item A small physical token: usually a small device that displays a six-digit number which is constantly changing.
+\item A smartphone app: along the lines of Google Authenticator.
+\item One-time passwords, written on paper.
+\item Text message to phone.
+\item Biometrics, e.g., fingerprints.
+\end{itemize}
+
+These are certainly useful and make a big difference because the password becomes insufficient for gaining access.
+
+\subsection*{Evidence-based (or Bayesian) authentication}
+
+Treat password entry as \textit{evidence} of identity, but with less than 100\% certainty. You then collect all other relevant evidence:
+\begin{itemize}
+\item Geolocation.
+\item Device identity: has Alice logged in from this device before?
+\item Software version: is this the version of Chrome that Alice typically uses?
+\item Behavior patterns: has Alice performed this action before? Does she always upload files this large?
+\end{itemize}
+
+Treat these as clues and reason in a probabilistic way. If you run a substantially large service, you can probably apply reasonably accurate estimates to each of these factors and come up with a good estimate.
+
+If your confidence is too low, then get more evidence. For example, send a text to Alice and ask her to type it in, or ask her to enter her password again after some period of time.
+
+\section*{Challenge-response protocols}
+
+We might want to avoid sending our password to server.
+\begin{enumerate}
+\item User has a password $p$.
+\item Server comes up with $c$, a random challenge, and sends it across to the user.
+\item The user sends back $PRF(p, c)$.
+\end{enumerate}
+
+The advantage here is that an eavesdropper can't replay a log-in session, so we're more robust to man-in-the-middle (MITM) attacks. In addition, if our server is being spoofed and we're actually communicating with an adversary, then they won't be able to recover our password based on what we send them.
+
+\section*{Biometrics}
+
+Based on measuring a physical aspect of the body. This could be:
+\begin{itemize}
+\item Fingerprint.
+\item Facial image.
+\item Iris scan.
+\item Retina scan.
+\item Voice.
+\item Gait.
+\item Typing patterns.
+\item Hand geometry.
+\end{itemize}
+
+This has some advantages, namely that these factors are not transferable (or, at the very least, more difficult to replicate). On the downside:
+\begin{itemize}
+\item These measurements must be approximate due to small physiological changes that take place over time. 
+\item These features are publicly observable. For example, you leave fingerprints in public constantly.
+\item These features can't be changed. For example, you can change password, but you can't get a new fingerprint.
+\item Still susceptible to spoofing. For example, you can hold up a picture of someone's face to spoof a facial image.
+\end{itemize}
+
+This doesn't mean that we shouldn't \textit{use} these biometric factors. But these technologies tend to work best when, in addition to the biometric, you have an observer checking to see that there's no spoofing going on.
+
+\end{document}
