@@ -124,7 +124,7 @@ So, consensus might look like: \textit{At any given time, all nodes have a seque
 One way Bitcoin \textit{might} implement consensus:
 \begin{itemize}
 \item Select \textit{any} valid block, even if proposed by just one node.
-\item Add this block to the block chain.
+\item Add this block to the blockchain.
 \item Repeat.
 \end{itemize}
 
@@ -135,7 +135,7 @@ Because of this, there were many impossibility results proven around distributed
 \subsection*{What does Bitcoin do differently?}
 \begin{itemize}
 \item Introduce incentives: only possible because it's a currency.
-\item Embraces randomness: does away with the notion of a specific end-point for consensus. The consensus protocol takes roughly an hour, but even after that time, you only have a probabilistic guarantee that your transaction made it into the consensus block chain.
+\item Embraces randomness: does away with the notion of a specific end-point for consensus. The consensus protocol takes roughly an hour, but even after that time, you only have a probabilistic guarantee that your transaction made it into the consensus blockchain.
 \end{itemize}
 
 \section*{Consensus without identity}
@@ -155,7 +155,7 @@ Instead, we often make a weaker assumption: \textit{that we have the ability to 
 
 In each round, a random node is picked. This node proposes the next block in the chain. Other nodes implicitly accept or reject the block:
 \begin{itemize}
-\item Accept by appending the proposed block to the block chain.
+\item Accept by appending the proposed block to the blockchain.
 \item Reject by starting from the block just before.
 \end{itemize}
 
@@ -182,7 +182,7 @@ How could a malicious adversary try to subvert this process?
 \begin{itemize}
 \item Immediately, Bob hears about Alice's spend. Before hearing any confirmation, he sends her the goods (this is a ``0 confirmation" transaction).
 \item He could also wait for 1 confirmation before approving. Or 2 confirmations. Or more. \textbf{The more confirmations your transactions get, the higher the probability that it ends up in the long-term consensus chain.}
-\item In general, the double-spend probability decreases \textit{exponentially} with the number of confirmations. Most heuristics use 6 confirmations (good tradeoff between the amount of time you'll have to wait and the guarantee that your transaction ends up in the block chain).
+\item In general, the double-spend probability decreases \textit{exponentially} with the number of confirmations. Most heuristics use 6 confirmations (good tradeoff between the amount of time you'll have to wait and the guarantee that your transaction ends up in the blockchain).
 \end{itemize}
 \end{itemize}
 \end{itemize}
@@ -206,7 +206,7 @@ Recall that Bitcoin's decentralization is partly a matter of incentive engineeri
 
 Can we penalize a node that attempts to double-spend? No, because nodes don't have identities.
 
-Instead, can we reward nodes that created the blocks that made it to the long-term consensus block chain? Yes--by rewarding them with Bitcoins.
+Instead, can we reward nodes that created the blocks that made it to the long-term consensus blockchain? Yes--by rewarding them with Bitcoins.
 
 Everything thus far was just an abstract algorithm. Now, consider that we've actually been implementing a currency with value. 
 
@@ -263,7 +263,7 @@ Miners need to decide if the costs of the hardware and electricity are less than
 \item \textbf{Identities}: There are no real-world identities required to participate in Bitcoin. Any user can create any number of identities.
 \item \textbf{Transactions}: Broadcast over the network. Instructions to transfer one coin from some address to another.
 \item \textbf{P2P network}: Goal is to propagate new transactions to Bitcoin peer nodes.
-\item \textbf{Block chain \& consensus}: If your transaction makes it into the block chain, it has a lot of confirmation.
+\item \textbf{blockchain \& consensus}: If your transaction makes it into the blockchain, it has a lot of confirmation.
 \item \textbf{Hash puzzles \& mining}: Miners are special types of nodes that opt in to this game of solving hash puzzles. They are rewarded in Bitcoin and are then allowed to propose new blocks for the chain.
 \end{itemize}
 
@@ -271,11 +271,11 @@ When I say I own a certain amount of Bitcoin, I mean that the Bitcoin P2P networ
 
 \section*{Bootstrapping}
 
-There's a tricky interplay between three things in Bitcoin: the \textit{security of the block chain}, the \textit{value of the currency}, and the \textit{health of the mining ecosystem}.
+There's a tricky interplay between three things in Bitcoin: the \textit{security of the blockchain}, the \textit{value of the currency}, and the \textit{health of the mining ecosystem}.
 
-We need it to be the case that an adversary can't takeover the block chain (i.e., the block chain is secure). That will only be true if the mining ecosystem is healthy and made up of honest, protocol-following nodes. That will only be true if the currency is valuable. And that will only be true if the block chain is secure.
+We need it to be the case that an adversary can't takeover the blockchain (i.e., the blockchain is secure). That will only be true if the mining ecosystem is healthy and made up of honest, protocol-following nodes. That will only be true if the currency is valuable. And that will only be true if the blockchain is secure.
 
-In the beginning, none of these three things existed. There were no miners except Satoshi, and there was no value to the currency. There was even an insecure block chain due to lack of miners. Since then, Bitcoin has bootstrapped itself. \textbf{Bitcoin went from having none of these properties to having (in some large measure) all of them.}
+In the beginning, none of these three things existed. There were no miners except Satoshi, and there was no value to the currency. There was even an insecure blockchain due to lack of miners. Since then, Bitcoin has bootstrapped itself. \textbf{Bitcoin went from having none of these properties to having (in some large measure) all of them.}
 
 \section*{What can a ``51\% attacker" do?}
 

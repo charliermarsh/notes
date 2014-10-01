@@ -117,7 +117,7 @@ What happens if we try to upgrade Bitcoin (i.e., the Bitcoin software)? Why woul
 
 Well, there are a lot of hard-coded limits (e.g., 10-minute average creation time per block, 1M bytes per block, 100M Satoshis per Bitcoin), and over time these may not be the best choices. In particular, there are some significant throughput limits in Bitcoin (turns out to support roughly 7 transactions per second), compared to 2,000-10,000 transactions per second for VISA. Bitcoin clearly cannot handle the volume of transactions that the world wants.
 
-A ``hard-forking" change to Bitcoin would be problematic, because nodes with the new software might accept certain blocks that the old nodes dislike. There are two types of incompatibility: the old nodes reject the new blocks, or the new nodes reject the old blocks (the latter results in an orphan block every time an old node mines a new block). This leads to tons of forking in the block chain, and the old nodes would never catch up. It's impossible to assume that every node would upgrade, or at least upgrade in time.
+A ``hard-forking" change to Bitcoin would be problematic, because nodes with the new software might accept certain blocks that the old nodes dislike. There are two types of incompatibility: the old nodes reject the new blocks, or the new nodes reject the old blocks (the latter results in an orphan block every time an old node mines a new block). This leads to tons of forking in the blockchain, and the old nodes would never catch up. It's impossible to assume that every node would upgrade, or at least upgrade in time.
 
 ``Soft forks" are doable: these limit the set of valid transactions or the set of valid blocks. You need the majority of nodes to enforce these new rules, but the old nodes will still approve them, because the now-approved blocks are a subset of the old-approved nodes. There's a risk in that the old nodes might mine now-invalid blocks; this leads to a temporary fork, but they'll recover and get back onto the main chain.
 
@@ -125,9 +125,9 @@ Pay-to-Script-Hash is a classic example of a soft fork. The old nodes will just 
 
 \section*{Blocks}
 
-We bundle transactions together to create a single unit of work for miners and make the block chain smaller, because all we need are hashes of blocks, rather than of every single transaction.
+We bundle transactions together to create a single unit of work for miners and make the blockchain smaller, because all we need are hashes of blocks, rather than of every single transaction.
 
-The block chain is a combination of two clever data structures:
+The blockchain is a combination of two clever data structures:
 \begin{itemize}
 \item A hash chain of blocks.
 \item A Merkle tree of the transactions in each block. \textit{This allows for logarithmic lookup of transactions within blocks.}
@@ -155,11 +155,11 @@ When you launch a new node, you start with a single message to one node that you
 
 You want to entire network to hear about a transaction that you make. Bitcoin follows a simple transaction propagation (i.e., \textit{flooding}) algorithm. You tell as many people as you can, then when they hear the news, they tell as many people as they can, etc., also known as a \textit{gossip protocol}.
 
-Each node maintains a list of all the transactions they've heard about (that haven't been included in the block chain). If you try to propagate a transaction and the recipient node has already heard about it, it'll just deny the request, as it can identify transactions very quickly by their hashes.
+Each node maintains a list of all the transactions they've heard about (that haven't been included in the blockchain). If you try to propagate a transaction and the recipient node has already heard about it, it'll just deny the request, as it can identify transactions very quickly by their hashes.
 
-Before propagating a transaction, you can check that it's valid with the current block chain. Typically, you also check that the script matches a whitelist, verify that you haven't seen it before, and make sure it doesn't conflict with other transactions you've relayed. (These are not required, which makes it important that every node does its own verifications.)
+Before propagating a transaction, you can check that it's valid with the current blockchain. Typically, you also check that the script matches a whitelist, verify that you haven't seen it before, and make sure it doesn't conflict with other transactions you've relayed. (These are not required, which makes it important that every node does its own verifications.)
 
-At different points in time, nodes will have a different view of the world: one node may consider transaction $T$ valid, while others may not. The network can end up in a divided state. But this is fine because the transactions have not been published in the block chain. In practice, this is a race condition, which is why network position matters.
+At different points in time, nodes will have a different view of the world: one node may consider transaction $T$ valid, while others may not. The network can end up in a divided state. But this is fine because the transactions have not been published in the blockchain. In practice, this is a race condition, which is why network position matters.
 
 \subsubsection*{Block propagation}
 
@@ -181,9 +181,9 @@ Two primary types of nodes.
 
 \subsection*{Fully-validating nodes}
 
-These store the entire block chain.
+These store the entire blockchain.
 
-There's some concern that the number of fully-validating nodes is going down: it's expensive in that you need to stay connected with an active network connection and must store the entire block chain (20GB).
+There's some concern that the number of fully-validating nodes is going down: it's expensive in that you need to stay connected with an active network connection and must store the entire blockchain (20GB).
 
 In addition, you want the entire UTXO set to be in RAM (1GB) so as to verify quickly. This is becoming more difficult over time.
 
