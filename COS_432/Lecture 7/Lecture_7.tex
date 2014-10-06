@@ -1,0 +1,171 @@
+\documentclass[12pt]{article}
+\usepackage{graphicx}
+\usepackage{amsmath, amssymb, amsthm}
+\usepackage[auth-sc,affil-sl]{authblk}
+\usepackage{enumerate}
+\newtheorem{thm}{Theorem}
+\newtheorem{cor}[thm]{Corollary}
+\newtheorem{lem}[thm]{Lemma}
+\newtheorem*{claim}{Claim}
+\newtheorem*{mydef}{Definition}
+
+% Set the margins
+%
+\setlength{\textheight}{8.5in}
+\setlength{\headheight}{.25in}
+\setlength{\headsep}{.25in}
+\setlength{\topmargin}{0in}
+\setlength{\textwidth}{6.5in}
+\setlength{\oddsidemargin}{0in}
+\setlength{\evensidemargin}{0in}
+
+% Macros
+\newcommand{\myN}{\hbox{N\hspace*{-.9em}I\hspace*{.4em}}}
+\newcommand{\myZ}{\hbox{Z}^+}
+\newcommand{\myR}{\hbox{R}}
+
+\newcommand{\myfunction}[3]
+{${#1} : {#2} \rightarrow {#3}$ }
+
+\newcommand{\myzrfunction}[1]
+{\myfunction{#1}{{\myZ}}{{\myR}}}
+
+
+% Formatting Macros
+
+\newcommand{\myheader}[4]
+{\vspace*{-0.5in}
+\noindent
+{#1} \hfill {#3}
+
+\noindent
+{#2} \hfill {#4}
+
+\noindent
+\rule[8pt]{\textwidth}{1pt}
+
+\vspace{1ex} 
+}  % end \myheader 
+
+\newcommand{\myalgsheader}[0]
+{\myheader
+{ {\bf{COS 432}} }
+{ {\bf{Fall 2014}} }
+{ {\bf{Charles Marsh (crmarsh@)}} }
+{ {\bf{Lecture 7}} }
+}
+
+\begin{document}
+
+\myalgsheader
+
+\pagestyle{plain}
+
+The definition of semantic security only requires that you can't distinguish messages of the \textit{same size}.
+
+\section*{The Public-Key Infrastructure}
+
+When I go to Facebook and type in my password, how do I know my password is only going to the real Facebook? We make certain assumptions:
+\begin{itemize}
+\item We assume that Firefox is behaving correctly (subsumes malware), i.e., is not sending information to other sites.
+\item HTTPS certification is working correctly.
+\item Facebook's URL is indeed facebook.com. (E.g., there's the \textit{IDN homograph attack}, where we could have wikipedia.com actually contain a non-standard letter that just looks lot like wikipedia.com, e.g., w?kipedia.com.)
+\end{itemize}
+
+Are these reasonable? If we look at the first one, we clearly had to download Firefox at some point. This leads to more assumptions:
+\begin{itemize}
+\item We assume that Internet Explorer (which we used to download Firefox) is behaving correctly.
+\item HTTPS certification is working correctly.
+\end{itemize}
+
+Why does Firefox believe that FB is legit? FB presents a certificate signed by a certificate authority (CA), VeriSign in this case. VeriSign is the root of trust, because Firefox has hard-coded into the browser its trust of VeriSign. We can come up with a large chain of trust that describes who we need to trust and why. Some observations:
+\begin{itemize}
+\item There's deep recursion in this chain of trust, but the trust is not transitive. You need to trust \textit{everyone} in the tree; it's insufficient to just trust someone that someone you trust trusts.
+\item The roots are often brands and small in number. Ideally, the user doesn't have to remember their URLs.
+\item MITM is not pose because of the authenticated key exchange and the use of the TLS/SSL protocol. In a way, cryptography removes the need for trusting the network--instead, you just need to trust the other parties.
+\end{itemize}
+
+\subsection*{NSA \& a ``rogue CA"}
+
+Here's how someone can MITM you:
+\begin{enumerate}
+\item Issue some rogue certificates for target sites.
+\item Select users to target and install MITM boxes at their ISPs.
+\item When the user sends a request to their desired site, you intercept the traffic and send back a signed response using a rogue certificate.
+\end{enumerate}
+
+How can we detect this?
+\begin{itemize}
+\item Have the browser remember old certificates and alert the server if something's wrong (``key pinning").
+\item Have the server notice that lots of users are logging in from the same IP (or, better yet, the same device).
+\end{itemize}
+
+The conclusion is that reports of the NSA routinely circumventing SSL are probably unfounded.
+
+\subsection*{What is the public-key infrastructure?}
+
+The basic structure is as follows:
+\begin{itemize}
+\item Infrastructure to create, distribute, validate, and revoke certificates (certificate authorities).
+\item A small number of roots hierarchically certify various entities.
+\item Clients trust roots, transitively follow chain of trust from server back to root.
+\item The standard is known as \textit{X.509}.
+\end{itemize}
+
+The traditional view of the CA hierarchy is tat you have a root CA who verifies an intermediate CA who verifies a leaf CA who releases end-entity certificates. In real life, it's much more complicated; the graph can even have cycles.
+
+\subsection*{Certificate}
+
+The certificate \textbf{binds} an entity to a public key. The certificate must be signed by some issuer (CA) and contains the identity of this issuer.
+
+To obtain a certificate:
+\begin{enumerate}
+\item Server generates a key pair, signs public key and ID info with the private key (this proves that the server actually knows the private key). The server holds onto the private key and provides message authentication.
+\item The CA verifies the server's signature by using the server's public key to verify itself.
+\item The CA signs the server's public key with the CA key. This creates a binding.
+\item The server verifies the key, ID, and the CA's signature.
+\item The server proudly hangs new certificate on the wall.
+\end{enumerate}
+
+The X.509 spec itself is thousands of pages long. SSL/TLS utilize X.509 for key distribution, then perform key exchange and encryption. The spec is so long, though, that it's impossible for mortals to get right. There are always flaws and the implementations rely on attacks and fixes.
+
+In fact, it was found that almost all SSL clients except browsers and key SSL libraries are broken. This includes shopping cart libraries, instant messengers, mobile banking apps. They were actually broken in hilarious ways, like not checking that the URL is what they expect it to be.
+
+\section*{Hard problems}
+
+There are three primary problems here:
+\begin{itemize}
+\item Naming and identity verification.
+\item Anchoring.
+\item Revocation.
+\end{itemize}
+
+\subsection*{Naming and identity verification}
+
+For any naming system, you want three things:
+\begin{enumerate}
+\item Uniqueness.
+\item Human-memorable.
+\item Decentralized.
+\end{enumerate}
+
+This is known as \textbf{Zooko's triangle}, and the argument is that you can only get two of the three. For example, the human naming system is not unique, while domain names are not decentralized.
+
+Domain validation is typically automated and email-based. But email is still not secure? This raises the attacker's bar but is not completely safe.
+
+\section*{Revocation: Two hard problems}
+
+\begin{enumerate}
+\item Authenticating the revocation request.
+\begin{itemize}
+\item If not careful, it's easy DOS.
+\item Can't ask for the old key.
+\end{itemize}
+\item Keeping clients up to date.
+\begin{itemize}
+\item Offline model: keep a certificate revocation list.
+\item Online model: online certificate status protocol (OCSP).
+\end{itemize}
+\end{enumerate}
+
+\end{document}

@@ -1,0 +1,139 @@
+\documentclass[12pt]{article}
+\usepackage{graphicx}
+\usepackage{amsmath, amssymb, amsthm}
+\usepackage[auth-sc,affil-sl]{authblk}
+\usepackage{enumerate}
+\newtheorem{thm}{Theorem}
+\newtheorem{cor}[thm]{Corollary}
+\newtheorem{lem}[thm]{Lemma}
+\newtheorem*{claim}{Claim}
+\newtheorem*{mydef}{Definition}
+
+% Set the margins
+%
+\setlength{\textheight}{8.5in}
+\setlength{\headheight}{.25in}
+\setlength{\headsep}{.25in}
+\setlength{\topmargin}{0in}
+\setlength{\textwidth}{6.5in}
+\setlength{\oddsidemargin}{0in}
+\setlength{\evensidemargin}{0in}
+
+% Macros
+\newcommand{\myN}{\hbox{N\hspace*{-.9em}I\hspace*{.4em}}}
+\newcommand{\myZ}{\hbox{Z}^+}
+\newcommand{\myR}{\hbox{R}}
+
+\newcommand{\myfunction}[3]
+{${#1} : {#2} \rightarrow {#3}$ }
+
+\newcommand{\myzrfunction}[1]
+{\myfunction{#1}{{\myZ}}{{\myR}}}
+
+
+% Formatting Macros
+
+\newcommand{\myheader}[4]
+{\vspace*{-0.5in}
+\noindent
+{#1} \hfill {#3}
+
+\noindent
+{#2} \hfill {#4}
+
+\noindent
+\rule[8pt]{\textwidth}{1pt}
+
+\vspace{1ex} 
+}  % end \myheader 
+
+\newcommand{\myalgsheader}[0]
+{\myheader
+{ {\bf{COS 432}} }
+{ {\bf{Fall 2014}} }
+{ {\bf{Charles Marsh (crmarsh@)}} }
+{ {\bf{Lecture 8}} }
+}
+
+\begin{document}
+
+\myalgsheader
+
+\pagestyle{plain}
+
+\section*{The Clipper Chip}
+
+For much of the 20th century, cryptography was heavily controlled by the US government (its teaching, practice, etc.).
+
+The \textbf{Clipper Chip} was a piece of software designed by the government to provide \textbf{key escrow}. In particular, the system was a chip that used strong symmetric encryption. The key idea was that law enforcement entities could decrypt messages sent through the Clipper Chip. The choice was to either not use strong cryptography (because it was illegal), or use strong cryptography but allow the government to decrypt your messages.
+
+The Law Enforcement Access Field (LEAF) was a key part of thee design, with the Clipper Chip functioning as follows:
+\begin{enumerate}
+\item Sender and receiver negotiate a key $k_s$ (e.g., with Diffie-Hellman).
+\item Sender sends $E(k_s, \text{message}), LEAF$ to the receiver.
+\item The receiver checks the LEAF.
+\item The receiver decrypts.
+\end{enumerate}
+
+In more detail, the sender would come up with a session key. The Clipper Chip would then provide a unique unit key, and these would go into an encryption scheme. This would be concatenated with a unit ID and a checksum, computed as the hash of the session key and some parameters. The output would be 128 bits, which would then be encrypted again with a family key (common to all chips). The output of this encryption is known as the \textit{LEAF}.
+
+The receiver then receives the LEAF, decrypts with the family key, checks that the checksum works out, and proceeds to decrypt.
+
+This scheme was broken. Notice the following:
+\begin{itemize}
+\item The checksum was only 16 bits, so with $2^{16}$ tries you could brute force it, which is a searchable space.
+\item The checking algorithm is the very same on both the sending and receiving end. Therefore, you could send the same message to your \textit{own} Clipper Chip and check if it works. As a result, you would only have to send one message to the target chip because you can verify the checksum beforehand.
+\end{itemize}
+
+\section*{Secure System Design}
+
+Systems are only as secure as their components. With secure systems, you want your components to be isolated with nuanced access control.
+
+\subsection*{Access control}
+
+Access control is a combination of authentication (i.e., who is asking?) and authorization (i.e., do they have authority?).
+
+We've discussed authentication, so now we'll look at authorization. There are typically a few approaches here:
+
+\begin{itemize}
+\item Access control matrix or list (e.g., a list of who has access to what).
+\item Capabilities.
+\end{itemize}
+
+\subsubsection*{Access control matrix}
+
+The basic operation is that \textit{subject} wants to do \textit{verb} on \textit{object}. Do we allow it?
+
+The policy is the set of allowed $(s, v, o)$ triples. But how is the policy \text{set}? And how is it \textit{enforced}? 
+
+The subject is often a process and the object is often some resources, file, open network connection, window, etc. We ten to use labels to simplify a policy, e.g., label a process with a user ID and set the policy based on labels.
+
+Labeling can be complicated. Suppose Alice runs a program written by Bob. How do we label them? If we treat it as Alice, then the program can steal Alice's data. If we treat it as Bob, then Alice can read Bob's files.
+
+A common OS approach (e.g., in Linux) is to use a \textit{setuid} bit, so Bob decides whether the program runs as himself or the invoker.
+
+\subsubsection*{Storing the policy information}
+
+We use a \textbf{access control matrix} (ACL), where the columns represent objects, the rows represent subjects, and $M[i][j]$ is a list of allowed verbs.
+
+But who sets up the ACL? A centralized, top-down policy (e.g., the registrar decides who can see whose grades) has the advantage of being done by a well-trained person. But it's very inflexible and slow. A decentralize approach would be to give each object an owner and have to owner set the ACL. The advantage here is that it's very flexible, but it's also mistake-prone.
+
+\subsubsection*{Groups}
+
+Logically, we can divide users into sets, i.e., groups. We can then give access to groups, rather than to individuals. The advantage is that the use of groups makes ACLs shorter and easier to understand. It also encodes the \textit{reason for access}.
+
+\subsubsection*{Roles}
+
+If a person ``wears several hats", have a role for each ``hat"; allow users to step in and out of their roles. For example, Professor Felten could have a CITP hat and a separate Wilson School hat.
+
+\subsection*{Traditional Unix file access}
+
+Traditionally, a file in a Unix system belongs to one user or one group. The ACL for each operation contains a subset of \{user, group, everyone\}. If the \textit{setuserid} bit is set to true, then it executes as the file owner; otherwise, it executes as the invoker.
+
+\section*{Capabilities}
+
+The core operation is that ``the bearer may do \textit{verb} on \textit{object}." A different way to look at permissions.
+
+The implementation is usually cryptographic, i.e., you store (verb, object, $PRF(k, verb || object)$). Alternatively, the OS can keep track of things.
+
+\end{document}
