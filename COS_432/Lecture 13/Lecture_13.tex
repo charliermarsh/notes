@@ -1,0 +1,169 @@
+\documentclass[12pt]{article}
+\usepackage{graphicx}
+\usepackage{amsmath, amssymb, amsthm}
+\usepackage[auth-sc,affil-sl]{authblk}
+\usepackage{enumerate}
+\newtheorem{thm}{Theorem}
+\newtheorem{cor}[thm]{Corollary}
+\newtheorem{lem}[thm]{Lemma}
+\newtheorem*{claim}{Claim}
+\newtheorem*{mydef}{Definition}
+
+% Set the margins
+%
+\setlength{\textheight}{8.5in}
+\setlength{\headheight}{.25in}
+\setlength{\headsep}{.25in}
+\setlength{\topmargin}{0in}
+\setlength{\textwidth}{6.5in}
+\setlength{\oddsidemargin}{0in}
+\setlength{\evensidemargin}{0in}
+
+% Macros
+\newcommand{\myN}{\hbox{N\hspace*{-.9em}I\hspace*{.4em}}}
+\newcommand{\myZ}{\hbox{Z}^+}
+\newcommand{\myR}{\hbox{R}}
+
+\newcommand{\myfunction}[3]
+{${#1} : {#2} \rightarrow {#3}$ }
+
+\newcommand{\myzrfunction}[1]
+{\myfunction{#1}{{\myZ}}{{\myR}}}
+
+
+% Formatting Macros
+
+\newcommand{\myheader}[4]
+{\vspace*{-0.5in}
+\noindent
+{#1} \hfill {#3}
+
+\noindent
+{#2} \hfill {#4}
+
+\noindent
+\rule[8pt]{\textwidth}{1pt}
+
+\vspace{1ex} 
+}  % end \myheader 
+
+\newcommand{\myalgsheader}[0]
+{\myheader
+{ {\bf{COS 432}} }
+{ {\bf{Fall 2014}} }
+{ {\bf{Charles Marsh (crmarsh@)}} }
+{ {\bf{Lecture 13: Voting}} }
+}
+
+\begin{document}
+
+\myalgsheader
+
+\pagestyle{plain}
+
+\section*{Voting Criteria}
+
+Requirements for electronic voting include:
+\begin{itemize}
+\item Only authorized voters can vote.
+\item $\leq 1$ ballot for each voter.
+\item Ballots counted as cast.
+\item Ballots are \textbf{secret} or ``receipt-free": there's no way to prove to a third party that you voted a particular way (to prevent voter coercion).
+\end{itemize}
+
+There are logically two steps:
+\begin{enumerate}
+\item Cast ballot in a ``ballot box".
+\item Tally ``ballot box" to get result.
+\end{enumerate}
+
+\section*{Paper Ballots}
+
+If you think about old-fashioned paper ballots, they have the following properties:
+\begin{itemize}
+\item Cheap to operate.
+\item Easy to understand.
+\item Problematic if the ballot is long or complex.
+\item Subject to trickery, e.g., with chain-voting, where a goon hands you a filled-out ballot and demands that you bring out an empty ballot.
+\item Chain of custody: what happens with the ballot box between the time votes are cast and counted?
+\end{itemize}
+
+\section*{End-to-End (E2E) Cryptographic Voting}
+
+The basic outline is as follows:
+\begin{enumerate}
+\item Voter encrypts their ballot.
+\item Voter casts the ciphertext vote.
+\item System publishes the ciphertext ballots on a public bulletin board.
+\item End of election tally:
+\begin{enumerate}
+\item Shuffle and re-encrypt ciphertext ballots.
+\item Trustees collectively decrypt the ciphertext ballots, producing plaintext ballots.
+\item Publish everything, so anyone can do the tally.
+\end{enumerate}
+\end{enumerate}
+
+``Re-encryption" implies randomized encryption: one plaintext maps to many possible ciphertexts. This is an operation that, given a ciphertext $C$, computes $reenc(C)$ using a randomized algorithm with the property that $decrypt(reenc(C)) = decrypt(C)$. Essentially, the re-encryption still allows you to decrypt to the original plaintext.
+
+\subsection*{El Gamal Encryption}
+
+For El Gamal encryption, you have public parameters $g, p$ (Diffie-Hellman) and a private key $x$. The public key is computed as $g^x \bmod{p}$.
+
+To encrypt a message $M$:
+\begin{enumerate}
+\item Pick a random $r$.
+\item Compute $(g^r \bmod{p}, m g^{rx} \bmod{p})$. Notice that this is computable knowing only the public key.
+\end{enumerate}
+
+To decrypt a ciphertext $(A, B)$, compute $A^{-x}B \bmod{p}$. Notice that this is only computable if you know the private key $x$.
+
+\textbf{El Gamal allows for re-encryption}: given $(A, B)$, you can generate a new random value $r'$ and compute:
+
+\begin{align*}
+(A g^{r'} \bmod{p}, B g^{r'x} \bmod{p}) &= (g^r g^{r'} \bmod{p}, m g^{rx} g^{r'x} \bmod{p}) \\
+&= (g^{r+r'} \bmod{p}, m g^{(r+r')x} \bmod{p})
+\end{align*}
+
+Notice that the second line is just El Gamal encryption with random value $(r + r')$, i.e., it is a valid re-encryption, as it will decrypt to the same plaintext.
+
+As an added bonus, you can prove to challengers that you performed a valid re-encryption by revealing the value $r'$.
+
+\subsection*{Shuffling}
+
+We start with a ``ballot box" $B$ and end with $B'$, which should be a reordering of $B$. To prove that the shuffler didn't cheat, we'll need to use a (zero-knowledge) proof protocol:
+
+\begin{enumerate}
+\item Prover (shuffler) produces $B_1$. $B_1$ should be equivalent to $B$ and $B'$.
+\item Prover knows the correspondence.
+\item If $B$ is \textit{not} equivalent to $B'$, then $B_1$ cannot be equivalent to both of them.
+\item To challenge the prover, we have the challenger flip a coin and ask the prover to show the equivalence between $B$ and $B_1$ or $B'$ and $B_1$ (depending on the result of the coin flip).
+\item Prover unwraps the equivalence by demonstrating the correspondence: ``You can get from $B'$ to $B$ by a re-encryption with random value $r$."
+\item The prover will fail at least half the time if he or she doesn't actually have a valid correspondence.
+\item To increase our guarantee, run the proof protocol over and over.
+\end{enumerate}
+
+\section*{Lower-Tech Voting}
+
+\begin{center}
+    \begin{tabular}{| l | l | l |}
+    \hline
+    Type of record & Paper & Electronic \\ \hline
+    Example & Paper-ballots in ballot box & Voting machines \\ \hline
+    Counting & Slow, expensive & Fast, cheap \\ \hline
+    Main threat & Tampering afterward & Tampering beforehand \\ \hline
+    \end{tabular}
+\end{center}
+
+\subsection*{Paper with Electronic Records}
+
+As an example, consider optical-scan voting:
+\begin{itemize}
+\item The voters fills out a paper ballot.
+\item The voter feeds the ballet into a scanner.
+\item The scanner records an electronic record.
+\item The paper ballot is fed into a ballot box.
+\end{itemize}
+
+This produces both a paper and electronic ballot.
+
+\end{document}
