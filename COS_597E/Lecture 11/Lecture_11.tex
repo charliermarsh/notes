@@ -1,0 +1,125 @@
+\documentclass[12pt]{article}
+\usepackage{graphicx}
+\usepackage{amsmath, amssymb, amsthm}
+\usepackage[auth-sc,affil-sl]{authblk}
+\usepackage{enumerate}
+\newtheorem{thm}{Theorem}[section]
+\newtheorem{cor}[thm]{Corollary}
+\newtheorem{lem}[thm]{Lemma}
+\newtheorem*{claim}{Claim}
+\newtheorem*{mydef}{Definition}
+
+% Set the margins
+%
+\setlength{\textheight}{8.5in}
+\setlength{\headheight}{.25in}
+\setlength{\headsep}{.25in}
+\setlength{\topmargin}{0in}
+\setlength{\textwidth}{6.5in}
+\setlength{\oddsidemargin}{0in}
+\setlength{\evensidemargin}{0in}
+
+% Macros
+\newcommand{\myN}{\hbox{N\hspace*{-.9em}I\hspace*{.4em}}}
+\newcommand{\myZ}{\hbox{Z}^+}
+\newcommand{\myR}{\hbox{R}}
+
+\newcommand{\myfunction}[3]
+{${#1} : {#2} \rightarrow {#3}$ }
+
+\newcommand{\myzrfunction}[1]
+{\myfunction{#1}{{\myZ}}{{\myR}}}
+
+
+% Formatting Macros
+
+\newcommand{\myheader}[4]
+{\vspace*{-0.5in}
+\noindent
+{#1} \hfill {#3}
+
+\noindent
+{#2} \hfill {#4}
+
+\noindent
+\rule[8pt]{\textwidth}{1pt}
+
+\vspace{1ex} 
+}  % end \myheader 
+
+\newcommand{\myalgsheader}[0]
+{\myheader
+{ {\bf{COS 597E}} }
+{ {\bf{Fall 2014}} }
+{ {\bf{Charles Marsh (crmarsh@)}} }
+{ {\bf{Lecture 11: Mining Attacks}} }
+}
+
+\begin{document}
+
+\myalgsheader
+
+\pagestyle{plain}
+
+\section*{Mining: An Overview}
+
+We can break the process of mining down into six simple steps:
+
+\begin{enumerate}
+\item Join the network and listen for transactions.
+\item Listen for new block sand maintain the block chain.
+\item Assemble a new valid block.
+\item Find the nonce to make your block valid.
+\item Hope everybody accepts your block.
+\item Profit!
+\end{enumerate}
+
+\section*{Miner Misbehavior}
+
+How can miners deviate from the default protocol?
+
+\begin{itemize}
+\item \textbf{Include invalid transactions in a block}. This is relatively easy to shoot down: everybody else would reject the block.
+\item \textbf{Withhold blocks that they've mined}.
+\item \textbf{Blacklist certain addresses or transaction types}. This still produces valid blocks. They could blacklist either by excluding transactions that they don't like or try to fork when others send them blocks containing such transactions.
+\item \textbf{Not relay certain (or any) blocks}.
+\item \textbf{Spam or DDOS the network}. This can be done by propagating invalid blocks or even creating invalid blocks.
+\item \textbf{Build off of an old block}.
+\item \textbf{Blacklist a miner or pool} by never building off of their blocks.
+\item \textbf{Try to fork away from undesired blocks}, i.e., those created by blacklisted miners.
+\item \textbf{Scoop-up ``dead money"}, e.g., anyone-can-claim transactions, or transactions with weak passwords.
+\item \textbf{Break ties differently}. Maybe you always build off of the \textit{second} block you hear about, or accept bribes from other miners to build off of their blocks (to prove that you're mining on top of the bribers block, you could send them shares (see the notes on ``Mining Pools" for more)), or even accept the block with lower transaction fees so that you can put the high-fee transactions in your own blocks.
+\item \textbf{Change timestamps}. There are some limits to what you can put in that field, but you have a bit of leeway. For example, by making it look like blocks are coming out slowly (i.e., increasing the timestamp), you can prevent the difficulty from increasing too quickly.
+\item Out-of-band: \textbf{Coerce other miners}.
+\item Out-of-band: \textbf{Collude or share mining capacity} (``laundering" hashes or blocks).
+\end{itemize}
+
+\subsection*{Feather Forking}
+
+This is an attack first conceived by Andrew Miller. Say a block $X$ that you don't like is propagated to you. Assume $X$ is preceded by block $Y$. The goal is to try and build two blocks, built on top of $Y$, so that your branch becomes the longest before the network really builds upon $X$. (If two blocks quickly come in and build on top of $X$, then you give up.) The goal is to have the rest of the network follow you instead of block $X$.
+
+\subsubsection*{An Empirical Formula}
+
+Define $\alpha$ to be the attacker's proportion of the network hash capacity, and define $k$ to be the number of blocks behind that you're willing to continue attempting the attack (i.e., your persistence).
+
+Set $k=2$, for simplification. There's an $\alpha^2$ chance that you find two blocks before they find any, and there's an $\alpha(1-\alpha)$ chance that you end up in the exact same scenario as you were in at the beginning (i.e., that you find a block, then the main branch finds a block). This gives us the following recursive relationship: $E = \alpha^2 + \alpha(1-\alpha)E$. Solving gives us $E = \frac{\alpha^2}{1 - \alpha + \alpha^2}$.
+
+If you can get $E$ up to 20\% or so, then there's not really any reason for others to include $X$ in their versions of the blockchain. Even though you will probably lose money by executing the attack, there's enough of a threat (if you guarantee to go through with it) that you can successfully blacklist the miner of block $X$.
+
+This attack relies on visibility: you need to make your intentions public to get the other miners to go along with it.
+
+\subsubsection*{Comparisons to the 51\% Attack}
+
+In the original Bitcoin whitepaper, Satoshi discusses the 51\% attack, in which one miner uses his or her majority mining share to overtake the main branch and double spend. The author argues that this attack would never happen, as it would be against the attacker's economic interest: if a 51\% attack is launched, then everyone would lose faith in the currency and it would lose all of its value, making the attack worthless to the attacker.
+
+The 51\% attack is clearly an attack, but you could probably find a reasonable political argument for launching a feather fork (e.g., you want to blacklist any transactions from the Silk Road).
+
+The other major difference is that fighting this attack requires loyalty from the miners: they might get together and agree that it's in their collective benefit to fight the attacker (e.g., to include transactions from an address that the attacker has chosen to blacklist), but when they go off on their own, they don't \textit{really} have an incentive to do so. This is a classic game theoretic problem known as the ``Tragedy of the Commons".
+
+\subsubsection*{Goldfinger Attack}
+
+A Goldfinger attack is one in which your value comes from some other resource burning. In this case, it might involve Bitcoin value rising by some other altcoin tanking; thus, a Bitcoin stakeholder might benefit from launching a 51\% attack on the altcoin and watching it burn.
+
+
+
+\end{document}
