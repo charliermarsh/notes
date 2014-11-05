@@ -120,6 +120,22 @@ The other major difference is that fighting this attack requires loyalty from th
 
 A Goldfinger attack is one in which your value comes from some other resource burning. In this case, it might involve Bitcoin value rising by some other altcoin tanking; thus, a Bitcoin stakeholder might benefit from launching a 51\% attack on the altcoin and watching it burn.
 
+\subsection*{Selfish Mining}
 
+Another mining strategy: don't announce blocks right away; instead, hoard them to yourself in an attempt to get ahead of other miners. Typically, you'll try and mine two blocks in secret; then, even if someone else releases a new block, you can drop both of yours and everyone will switch to follow you. In the time before anyone finds a new block and after you've already found two, you have exclusive rights to mining the next block (because no one else in the network knows about it).
+
+What if the network finds a block before you find your second (selfish) block? You have a few options:
+\begin{itemize}
+\item \textbf{Continue working on your own block}. There's a chance that you find a new one before they find another, and then everyone will switch to your chain. (Recall, though, that proof-of-work is memoryless, so it's not like the work you've put in to mining your secret block already counts for anything.)
+\item \textbf{Release your block and aim to have optimal network position}. You might be able to flood the network with your secret block before the initial block has been propagated. This strategy could be bolstered by maintaing a bunch of Sybils around the network--Sybils don't require any work (i.e., hash power) to set up; they can just sit around and do nothing until they need to relay your blocks (this also makes the attack hard to reason about).
+\end{itemize}
+
+How could we analyze this block-withholding attack? Assuming we have hash power $\alpha$:
+\begin{itemize}
+\item With probability $\alpha^2$, we find two blocks before anyone in the network finds a single block. We also have some time to mine the next block on our own, which is worth $\frac{1}{\alpha}$ to us.
+\item The attack backfires if we find a block, the network finds a block, we compete to propagate it onward, and lose. If we control the network (very unrealistic), then this attack would \textit{never} fail. For any other proportion of network control, it's a race.
+\end{itemize}
+
+If you have a 50\% chance of winning a race, then this is a profitable strategy for $\alpha > 0.25$. But this attack hasn't been observed in practice and is difficult to reason about--how can we compute the true probability of winning a race?
 
 \end{document}
